@@ -27,6 +27,7 @@ import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
@@ -48,8 +49,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.mutableStateListOf
+import java.util.Locale
 
 
 @Composable
@@ -350,7 +351,7 @@ fun EditTime(initialTime: String,
             )
             Spacer(modifier = Modifier.height(25.dp))
             ElevatedButton(onClick = {
-                val selectedTime = String.format("%02d:%02d", timePickerState.hour, timePickerState.minute)
+                val selectedTime = String.format(Locale.getDefault(), "%02d:%02d", timePickerState.hour, timePickerState.minute)
                 onDone(selectedTime) },
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFCFAEE)),
@@ -578,7 +579,7 @@ fun EditLabel(initialLabel: String,
                     fontWeight = FontWeight.Bold,
                     fontSize = 25.sp
                 ),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
+                colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = Color(0xFFFCFAEE),
                     focusedBorderColor = Color(0xFFFCFAEE),
                     cursorColor = Color(0xFFFCFAEE)),
