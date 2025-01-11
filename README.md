@@ -10,7 +10,6 @@ Uporabnik lahko prilagodi naslednje nastavitve alarma:
 - ime alarma
 - ponavljajoče se dni v tednu
 - zvok ob sprožitvi
-- možnost dremeža (vklop / izklop)
 
 
 
