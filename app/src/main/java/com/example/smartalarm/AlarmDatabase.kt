@@ -5,7 +5,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
-@Database(entities = [AlarmEntity::class], version = 2)
+@Database(entities = [AlarmEntity::class], version = 3)
 @TypeConverters(Converters::class) // Register the converters
 abstract class AlarmDatabase : RoomDatabase() {
 

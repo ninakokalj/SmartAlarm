@@ -8,8 +8,11 @@ interface AlarmDao {
     @Query("SELECT * FROM alarms")
     fun getAllAlarms(): Flow<List<AlarmEntity>> // Fetch all alarms
 
+    @Query("SELECT * FROM alarms WHERE isEnabled = 1")  // Fetch enabled alarms
+    fun getEnabledAlarms(): Flow<List<AlarmEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertAlarm(alarm: AlarmEntity) // Insert an alarm
+    fun insertAlarm(alarm: AlarmEntity): Long // Insert an alarm
 
     @Update
     fun updateAlarm(alarm: AlarmEntity) // Update an alarm

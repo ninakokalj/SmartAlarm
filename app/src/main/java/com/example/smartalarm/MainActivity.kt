@@ -1,9 +1,12 @@
 package com.example.smartalarm
 
+import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,7 +51,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
+import java.util.Calendar
 
 @Entity(tableName = "alarms")
 data class AlarmEntity(
@@ -58,29 +63,34 @@ data class AlarmEntity(
     val isEnabled: Boolean = true,                      // ali naj zvoni
     val repeatDays: List<String> = listOf(),            // katere dni
     val sound: Int,                                     // R.raw.alarm1
-    val mission: String,                                // 0-Math, 1-Missing Symbol
-    val snooze: Boolean = true                          // ali je snooze omogočen
+    val mission: String                                 // Math, None
 )
-
 
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var alarmViewModel: AlarmViewModel
 
+    @RequiresApi(Build.VERSION_CODES.S)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        alarmViewModel = ViewModelProvider(this).get(AlarmViewModel::class.java)
+        alarmViewModel = ViewModelProvider(this)[AlarmViewModel::class.java]
 
 
         setContent {
 
             val navController = rememberNavController()
+            // pogledam če je app odprl alarm
+            val startDestination = if (intent.hasExtra("ALARM_MISSION")) {
+                "mathMission"
+            } else {
+                "alarmList"
+            }
 
             SmartAlarmTheme {
-
+                val ctx = LocalContext.current
                 val alarms by alarmViewModel.allAlarms.observeAsState(emptyList())
 
                 Scaffold(
@@ -90,23 +100,26 @@ class MainActivity : ComponentActivity() {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color(0xFF384B70)) // Set the background color here
-                            .padding(paddingValues) // Apply padding values from Scaffold
+                            .background(Color(0xFF384B70))
+                            .padding(paddingValues)
                     ) {
                         // navigation graph
-                        NavHost(navController = navController, startDestination = "alarmList") {
+                        NavHost(navController = navController, startDestination = startDestination) {
                             // First screen: Alarm list
                             composable("alarmList") {
                                 AlarmScreen(
                                     alarms = alarms,
+                                    context = ctx,
                                     modifier = Modifier.padding(paddingValues),
                                     onAlarmChange = { updatedAlarm ->
-                                        alarmViewModel.updateAlarm(updatedAlarm)
+                                        alarmViewModel.updateAlarm(ctx, updatedAlarm)
                                     },
                                     onAlarmClick = { alarm ->
                                         navController.navigate("editAlarm/${alarm.id}")
                                     },
-                                    addAlarm = { navController.navigate("addAlarm") }
+                                    addAlarm = { navController.navigate("addAlarm") },
+                                    scheduleAlarm = { context, alarm -> alarmViewModel.scheduleAlarm(context, alarm) },
+                                    unscheduleAlarm = { context, alarm -> alarmViewModel.unscheduleAlarm(context, alarm) }
                                 )
                             }
                             // Second screen: Edit alarm screen
@@ -119,25 +132,44 @@ class MainActivity : ComponentActivity() {
                                     AlarmEditPage(
                                         alarm = alarm,
                                         onSave = { updatedAlarm ->
-                                            alarmViewModel.updateAlarm(updatedAlarm)
+                                            alarmViewModel.updateAlarm(ctx, updatedAlarm)
                                             navController.popBackStack()
                                         },
                                         onCancel = { navController.popBackStack() },
                                         onDelete = {
-                                            alarmViewModel.deleteAlarm(alarm)
+                                            alarmViewModel.deleteAlarm(ctx, alarm)
                                             navController.popBackStack()
                                         }
                                     )
                                 }
                             }
+                            // Third screen: Add alarm screen
                             composable("addAlarm") {
                                 AddAlarmPage(
                                     onSave = { newAlarm ->
-                                        alarmViewModel.addAlarm(newAlarm)
+                                        alarmViewModel.addAlarm(ctx, newAlarm)
                                         navController.popBackStack()
                                     },
                                     onCancel = { navController.popBackStack() }
                                 )
+                            }
+                            // Fourth screen: Math mission screen
+                            composable("mathMission") {
+                                val mission = intent.getStringExtra("ALARM_MISSION") ?: "None"
+                                val id = intent?.getIntExtra("ALARM_ID", 0) ?: 0
+
+                                MathMissionPage(
+                                    mission = mission,
+                                    navController = navController
+                                )
+
+                                // odenablaš ko enkrat zvoni
+                                val alarm = alarms.find {it.id == id}
+                                val ctx = LocalContext.current
+                                if (alarm != null && alarm.isEnabled && alarm.repeatDays.isEmpty()) {
+                                    val updatedAlarm = alarm.copy(isEnabled = false)
+                                    alarmViewModel.updateAlarm(ctx, updatedAlarm)
+                                }
                             }
                         }
                     }
@@ -147,10 +179,13 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// This function is used to display alarm details
-
+// funkcija, ki displaya alarm details
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun AlarmScreen(alarms: List<AlarmEntity>, modifier: Modifier, onAlarmChange: (AlarmEntity) -> Unit, onAlarmClick: (AlarmEntity) -> Unit, addAlarm: () -> Unit) {
+fun AlarmScreen(alarms: List<AlarmEntity>, context: Context, modifier: Modifier, onAlarmChange: (AlarmEntity) -> Unit,
+                onAlarmClick: (AlarmEntity) -> Unit, addAlarm: () -> Unit,
+                scheduleAlarm: (Context, AlarmEntity) -> Unit,
+                unscheduleAlarm: (Context, AlarmEntity) -> Unit,) {
 
     Scaffold (
         modifier = modifier,
@@ -173,39 +208,61 @@ fun AlarmScreen(alarms: List<AlarmEntity>, modifier: Modifier, onAlarmChange: (A
                 .background(Color(0xFF384B70))
                 .padding(paddingValues)
         ) {
-            LazyColumn(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
                 item {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 16.dp), // Adjust vertical padding for spacing
-                        contentAlignment = Alignment.Center // Center-align the text within the box
+                            .padding(vertical = 16.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Ring in ...",
+                            text = getDailyText(),
                             color = Color(0xFFFCFAEE),
-                            fontSize = 25.sp,
+                            fontSize = 30.sp,
                             fontFamily = FontFamily.SansSerif,
                             fontWeight = FontWeight.Bold
                         )
                     }
-                     // Add space between this text and the next items
-                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
                 items(alarms) { alarm ->
                     AlarmButton(alarm = alarm, onAlarmChange = onAlarmChange,
                         onAlarmClick = onAlarmClick,
+                        scheduleAlarm = scheduleAlarm,
+                        unscheduleAlarm = unscheduleAlarm,
+                        context = context,
                         modifier = Modifier.padding(horizontal = 16.dp))
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
     }
-
 }
+
+@RequiresApi(Build.VERSION_CODES.O)
+fun getDailyText(): String {
+    val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+
+    return when (currentHour) {
+        in 5..11 -> "Good Morning ☕"
+        in 12..17 -> "Hello \uD83C\uDF1E"
+        in 18..21 -> "Good Evening \uD83C\uDF19"
+        else -> "Good Night \uD83D\uDE34"
+    }
+}
+
 @Composable
-fun AlarmButton(alarm: AlarmEntity, onAlarmChange: (AlarmEntity) -> Unit,
-                onAlarmClick: (AlarmEntity) -> Unit, modifier: Modifier = Modifier) { // funk ki prejme AlarmEntity in vrne Unit=void
+fun AlarmButton(alarm: AlarmEntity,  context: Context, onAlarmChange: (AlarmEntity) -> Unit,
+                onAlarmClick: (AlarmEntity) -> Unit, scheduleAlarm: (Context, AlarmEntity) -> Unit,
+                unscheduleAlarm: (Context, AlarmEntity) -> Unit, modifier: Modifier = Modifier) {
 
     var switchState by remember { mutableStateOf(alarm.isEnabled) }
 
@@ -245,7 +302,13 @@ fun AlarmButton(alarm: AlarmEntity, onAlarmChange: (AlarmEntity) -> Unit,
                 onCheckedChange = {
                     switchState = it
                     // naredim nov alarm s spremenjenim samo isEnabled
-                    onAlarmChange(alarm.copy(isEnabled = it))
+                    val updatedAlarm = alarm.copy(isEnabled = it)
+                    onAlarmChange(updatedAlarm)
+                    if (it) {
+                        scheduleAlarm(context, updatedAlarm)
+                    } else {
+                        unscheduleAlarm(context, updatedAlarm)
+                    }
                 },
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color(0xFFBA4054),

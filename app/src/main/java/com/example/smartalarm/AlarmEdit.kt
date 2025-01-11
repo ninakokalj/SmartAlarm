@@ -14,10 +14,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ElevatedButton
@@ -26,8 +29,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -48,6 +49,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.mutableStateListOf
 
 
 @Composable
@@ -62,7 +64,6 @@ fun AlarmEditPage( alarm: AlarmEntity,
     var repeatDays by remember { mutableStateOf(alarm.repeatDays) }
     var sound by remember { mutableIntStateOf(alarm.sound) }
     var mission by remember { mutableStateOf(alarm.mission) }
-    var snooze by remember { mutableStateOf(alarm.snooze) }
 
     var mode by remember { mutableStateOf("main") }
     // "main", "editRepeatDays", "editTime", "editLabel", "editSound", "editMission"
@@ -92,8 +93,7 @@ fun AlarmEditPage( alarm: AlarmEntity,
                             label = label,
                             repeatDays = repeatDays,
                             sound = sound,
-                            mission = mission,
-                            snooze = snooze
+                            mission = mission
                         )) },
                         modifier = Modifier.weight(1f)
                     ) {
@@ -106,7 +106,7 @@ fun AlarmEditPage( alarm: AlarmEntity,
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(),
-                    contentAlignment = Alignment.Center // Center the button horizontally
+                    contentAlignment = Alignment.Center
                 ) {
                     ElevatedButton(
                         onClick = {mode = "editTime"},
@@ -114,15 +114,17 @@ fun AlarmEditPage( alarm: AlarmEntity,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF596266)),
                         modifier = Modifier
-                            .fillMaxWidth(0.5f) // Make the button take 70% of the width (adjustable)
+                            .fillMaxWidth(0.5f)
                             .height(75.dp)
                     ) {
                         Text(text = time, fontSize = 45.sp, fontWeight = FontWeight.ExtraBold,
                             fontFamily =  FontFamily.SansSerif, color = Color(0xFFFCFAEE))
                     }
                 }
-                LabelsSection(alarm = alarm,
-                    onSnoozeChange = {snooze = !snooze},
+                LabelsSection(label = label,
+                    repeatDays = repeatDays,
+                    sound = sound,
+                    mission = mission,
                     onEditRepeatDays = { mode = "editRepeatDays" },
                     onEditLabel = { mode = "editLabel" },
                     onEditSound = { mode = "editSound" },
@@ -131,8 +133,9 @@ fun AlarmEditPage( alarm: AlarmEntity,
 
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center // Center the button horizontally
+                        .fillMaxWidth()
+                        .padding(bottom = 24.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     ElevatedButton(
                         onClick = { onDelete() },
@@ -193,8 +196,10 @@ fun AlarmEditPage( alarm: AlarmEntity,
 }
 
 @Composable
-fun LabelsSection(alarm: AlarmEntity,
-                  onSnoozeChange: () -> Unit,
+fun LabelsSection(label: String,
+                  repeatDays: List<String>,
+                  sound: Int,
+                  mission: String,
                   onEditRepeatDays: () -> Unit,
                   onEditLabel: () -> Unit,
                   onEditSound: () -> Unit,
@@ -211,12 +216,12 @@ fun LabelsSection(alarm: AlarmEntity,
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(), // Make Row fill the TextButton
-                horizontalArrangement = Arrangement.SpaceBetween // Align texts at both ends
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(text = "Mission", fontSize = 25.sp, textAlign = TextAlign.Start, color = Color(0xFFFCFAEE),
                     fontFamily =  FontFamily.SansSerif, fontWeight = FontWeight.Bold)
-                Text(text = alarm.mission+ " >", fontSize = 25.sp, textAlign = TextAlign.End, color = Color(0xFFFCFAEE),
+                Text(text = "$mission >", fontSize = 25.sp, textAlign = TextAlign.End, color = Color(0xFFFCFAEE),
                     fontFamily =  FontFamily.SansSerif, fontWeight = FontWeight.Bold)
             }
         }
@@ -226,12 +231,12 @@ fun LabelsSection(alarm: AlarmEntity,
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(), // Make Row fill the TextButton
-                horizontalArrangement = Arrangement.SpaceBetween // Align texts at both ends
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(text = "Repeat", fontSize = 25.sp, textAlign = TextAlign.Start, color = Color(0xFFFCFAEE),
                     fontFamily =  FontFamily.SansSerif, fontWeight = FontWeight.Bold)
-                Text(text = showDays(alarm.repeatDays) + " >", fontSize = 25.sp, textAlign = TextAlign.End, color = Color(0xFFFCFAEE),
+                Text(text = showDays(repeatDays) + " >", fontSize = 25.sp, textAlign = TextAlign.End, color = Color(0xFFFCFAEE),
                     fontFamily =  FontFamily.SansSerif, fontWeight = FontWeight.Bold)
             }
         }
@@ -241,12 +246,12 @@ fun LabelsSection(alarm: AlarmEntity,
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(), // Make Row fill the TextButton
-                horizontalArrangement = Arrangement.SpaceBetween // Align texts at both ends
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(text = "Label", fontSize = 25.sp, textAlign = TextAlign.Start, color = Color(0xFFFCFAEE),
                     fontFamily =  FontFamily.SansSerif, fontWeight = FontWeight.Bold)
-                Text(text = alarm.label + " >", fontSize = 25.sp, textAlign = TextAlign.End, color = Color(0xFFFCFAEE),
+                Text(text = "$label >", fontSize = 25.sp, textAlign = TextAlign.End, color = Color(0xFFFCFAEE),
                     fontFamily =  FontFamily.SansSerif, fontWeight = FontWeight.Bold)
             }
         }
@@ -263,44 +268,15 @@ fun LabelsSection(alarm: AlarmEntity,
                 Pair("Oversimplified", R.raw.oversimplified),
                 Pair("Radar", R.raw.radar)
             )
-            val soundName = soundOptions.find { it.second == alarm.sound }?.first
+            val soundName = soundOptions.find { it.second == sound }?.first
             Row(
-                modifier = Modifier.fillMaxWidth(), // Make Row fill the TextButton
-                horizontalArrangement = Arrangement.SpaceBetween // Align texts at both ends
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(text = "Sound", fontSize = 25.sp, textAlign = TextAlign.Start, color = Color(0xFFFCFAEE),
                     fontFamily =  FontFamily.SansSerif, fontWeight = FontWeight.Bold)
                 Text(text = "$soundName >", fontSize = 25.sp, textAlign = TextAlign.End, color = Color(0xFFFCFAEE),
                     fontFamily =  FontFamily.SansSerif, fontWeight = FontWeight.Bold)
-            }
-        }
-        Spacer(modifier = Modifier.height(18.dp))
-        TextButton(
-            onClick = { },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(), // Make Row fill the TextButton
-                horizontalArrangement = Arrangement.SpaceBetween // Align texts at both ends
-            ) {
-                Text(
-                    text = "Snooze",
-                    fontSize = 25.sp,
-                    textAlign = TextAlign.Start, color = Color(0xFFFCFAEE),
-                    fontFamily =  FontFamily.SansSerif, fontWeight = FontWeight.Bold
-                )
-                Switch(
-                    checked = alarm.snooze,
-                    onCheckedChange = {
-                        onSnoozeChange()
-                    },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color(0xFFBA4054),
-                        uncheckedThumbColor = Color(0xFF2F393D),
-                        checkedTrackColor = Color(0xFFB58089),
-                        uncheckedTrackColor = Color(0xFF404F54)
-                    )
-                )
             }
         }
     }
@@ -363,7 +339,7 @@ fun EditTime(initialTime: String,
     Box(
         modifier = Modifier
             .fillMaxSize(),
-        contentAlignment = Alignment.TopCenter // Center contents vertically and horizontally
+        contentAlignment = Alignment.TopCenter
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -374,7 +350,7 @@ fun EditTime(initialTime: String,
             )
             Spacer(modifier = Modifier.height(25.dp))
             ElevatedButton(onClick = {
-                val selectedTime = "${timePickerState.hour}:${timePickerState.minute}"
+                val selectedTime = String.format("%02d:%02d", timePickerState.hour, timePickerState.minute)
                 onDone(selectedTime) },
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFCFAEE)),
@@ -389,18 +365,25 @@ fun EditTime(initialTime: String,
 }
 
 @Composable
-fun EditRepeatDays(initialRepeatDays: List<String>,
-                   onDone: (List<String>) -> Unit,
-                   onCancel: () -> Unit
+fun EditRepeatDays(
+    initialRepeatDays: List<String>,
+    onDone: (List<String>) -> Unit,
+    onCancel: () -> Unit
 ) {
     val daysOfWeek = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
     val weekendDays = listOf("Saturday", "Sunday")
     val weekdayDays = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 
-    // Track which days are selected
-    val selectedDays = remember { mutableStateOf(initialRepeatDays.toMutableSet()) }
-    var isWeekendChecked by remember { mutableStateOf(selectedDays.value.containsAll(weekendDays)) }
-    var isWeekdayChecked by remember { mutableStateOf(selectedDays.value.containsAll(weekdayDays)) }
+    val selectedDays = remember { mutableStateListOf<String>() }
+    selectedDays.addAll(initialRepeatDays)
+
+    var isWeekendChecked by remember { mutableStateOf(selectedDays.containsAll(weekendDays)) }
+    var isWeekdayChecked by remember { mutableStateOf(selectedDays.containsAll(weekdayDays)) }
+
+    fun updateButtonStates() {
+        isWeekendChecked = selectedDays.containsAll(weekendDays)
+        isWeekdayChecked = selectedDays.containsAll(weekdayDays)
+    }
 
     Column {
         Row(
@@ -411,9 +394,14 @@ fun EditRepeatDays(initialRepeatDays: List<String>,
             verticalAlignment = Alignment.CenterVertically
         ) {
             TextButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
-                Text(text = "< back", fontFamily =  FontFamily.SansSerif,
-                    fontWeight = FontWeight.ExtraBold, fontSize = 20.sp,
-                    textAlign = TextAlign.Start, color = Color(0xFF202426))
+                Text(
+                    text = "< back",
+                    fontFamily = FontFamily.SansSerif,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 20.sp,
+                    textAlign = TextAlign.Start,
+                    color = Color(0xFF202426)
+                )
             }
             Text(
                 text = "Repeat",
@@ -421,106 +409,125 @@ fun EditRepeatDays(initialRepeatDays: List<String>,
                 color = Color(0xFF0F141E),
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
-                fontFamily =  FontFamily.SansSerif,
+                fontFamily = FontFamily.SansSerif,
                 modifier = Modifier.weight(1f)
             )
             Spacer(modifier = Modifier.weight(1f))
         }
+
         Spacer(modifier = Modifier.height(40.dp))
 
-        // checkbox
-        // Row with Weekends and Weekdays buttons
+        // 'Weekends' in 'Weekdays' gumba
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center
         ) {
-            // Weekends Button
             OutlinedButton(
                 modifier = Modifier.padding(horizontal = 10.dp),
                 onClick = {
                     isWeekendChecked = !isWeekendChecked
                     if (isWeekendChecked) {
-                        selectedDays.value.addAll(weekendDays)
+                        selectedDays.addAll(weekendDays)
                     } else {
-                        selectedDays.value.removeAll(weekendDays)
+                        selectedDays.removeAll(weekendDays)
                     }
+                    updateButtonStates()
                 },
                 border = BorderStroke(2.dp, if (isWeekendChecked) Color(0xFFB58089) else Color(0xFFFCFAEE)),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text("+ Weekends", fontFamily =  FontFamily.SansSerif,
+                Text(
+                    "+ Weekends",
+                    fontFamily = FontFamily.SansSerif,
                     fontSize = 18.sp,
                     color = if (isWeekendChecked) Color(0xFFB58089) else Color(0xFFFCFAEE)
                 )
             }
-            // Weekdays Button
+
             OutlinedButton(
                 modifier = Modifier.padding(horizontal = 10.dp),
                 onClick = {
                     isWeekdayChecked = !isWeekdayChecked
                     if (isWeekdayChecked) {
-                        selectedDays.value.addAll(weekdayDays)
+                        selectedDays.addAll(weekdayDays)
                     } else {
-                        selectedDays.value.removeAll(weekdayDays)
+                        selectedDays.removeAll(weekdayDays)
                     }
+                    updateButtonStates()
                 },
                 border = BorderStroke(2.dp, if (isWeekdayChecked) Color(0xFFB58089) else Color(0xFFFCFAEE)),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text("+ Weekdays", fontFamily =  FontFamily.SansSerif,
+                Text(
+                    "+ Weekdays",
+                    fontFamily = FontFamily.SansSerif,
                     fontSize = 18.sp,
                     color = if (isWeekdayChecked) Color(0xFFB58089) else Color(0xFFFCFAEE)
                 )
             }
-
         }
+
         Spacer(modifier = Modifier.height(25.dp))
-        // Individual day checkboxes
+
+        // checkbox za vsak dan
         daysOfWeek.forEach { day ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 5.dp)
-                    .padding(horizontal = 16.dp),
+                    .padding(vertical = 5.dp, horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Checkbox(
-                    checked = selectedDays.value.contains(day),
+                    checked = selectedDays.contains(day),
                     onCheckedChange = { checked ->
                         if (checked) {
-                            selectedDays.value.add(day)
+                            selectedDays.add(day)
                         } else {
-                            selectedDays.value.remove(day)
+                            selectedDays.remove(day)
                         }
-                        isWeekendChecked = selectedDays.value.containsAll(weekendDays)
-                        isWeekdayChecked = selectedDays.value.containsAll(weekdayDays)
+                        updateButtonStates()
                     },
                     colors = CheckboxDefaults.colors(
-                        checkedColor = Color(0xFFB58089),      // Color when the checkbox is checked
-                        uncheckedColor = Color(0xFFFCFAEE),    // Color when the checkbox is unchecked
+                        checkedColor = Color(0xFFB58089),
+                        uncheckedColor = Color(0xFFFCFAEE),
                         checkmarkColor = Color(0xFFFCFAEE)
                     )
                 )
-                Text(day, fontWeight = FontWeight.SemiBold, fontFamily =  FontFamily.SansSerif, fontSize = 18.sp, color = Color(0xFFFCFAEE))
+                Text(
+                    text = day,
+                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = FontFamily.SansSerif,
+                    fontSize = 18.sp,
+                    color = Color(0xFFFCFAEE)
+                )
             }
         }
+
         Spacer(modifier = Modifier.height(50.dp))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center // Center button horizontally
+            horizontalArrangement = Arrangement.Center
         ) {
-            ElevatedButton(onClick = { onDone(selectedDays.value.toList())},
+            ElevatedButton(
+                onClick = { onDone(selectedDays.toList()) },
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFCFAEE)),
                 modifier = Modifier
                     .fillMaxWidth(0.35f)
                     .height(40.dp)
             ) {
-                Text("done", color = Color(0xFF384B70), fontSize = 18.sp, fontFamily =  FontFamily.SansSerif)
+                Text(
+                    text = "done",
+                    color = Color(0xFF384B70),
+                    fontSize = 18.sp,
+                    fontFamily = FontFamily.SansSerif
+                )
             }
         }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -554,7 +561,6 @@ fun EditLabel(initialLabel: String,
         }
         Spacer(modifier = Modifier.height(40.dp))
 
-        // Label input
         var text by remember { mutableStateOf(initialLabel) }
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -645,7 +651,6 @@ fun SelectAlarmSound(initialSound: Int, onDone: (Int) -> Unit) {
         Pair("Radar", R.raw.radar)
     )
 
-    // Find the initial index based on the provided initial sound resource ID
     val initialIndex = soundOptions.indexOfFirst { it.second == initialSound }
     var selectedSoundIndex by remember { mutableIntStateOf(initialIndex) }
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
@@ -671,7 +676,7 @@ fun SelectAlarmSound(initialSound: Int, onDone: (Int) -> Unit) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Display radio buttons for each sound option
+        // radio buttons za vsak zvok
         soundOptions.forEachIndexed { index, soundOption ->
             Row(
                 modifier = Modifier
@@ -691,7 +696,7 @@ fun SelectAlarmSound(initialSound: Int, onDone: (Int) -> Unit) {
                         }
                     },
                     colors = RadioButtonDefaults.colors(
-                        unselectedColor = Color(0xFFFCFAEE), // Color when disabled
+                        unselectedColor = Color(0xFFFCFAEE),
                         selectedColor = Color(0xFFB58089)
                     )
                 )
@@ -704,7 +709,7 @@ fun SelectAlarmSound(initialSound: Int, onDone: (Int) -> Unit) {
         Spacer(modifier = Modifier.height(50.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center // Center button horizontally
+            horizontalArrangement = Arrangement.Center
         ) {
             ElevatedButton(
                 onClick = {
@@ -728,7 +733,6 @@ fun SelectAlarmSound(initialSound: Int, onDone: (Int) -> Unit) {
     }
 }
 
-// TODO nedokončane misije
 @Composable
 fun EditMission(initialMission: String,
                 onDone: (String) -> Unit,
@@ -759,22 +763,92 @@ fun EditMission(initialMission: String,
             Spacer(modifier = Modifier.weight(1f))
         }
         Spacer(modifier = Modifier.height(40.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center // Center button horizontally
+
+        // mission selection
+        val missions = listOf("Math", "None")
+        var selectedMission by remember { mutableStateOf(initialMission) }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            ElevatedButton(onClick = { onDone("Math") },
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFCFAEE)),
-                modifier = Modifier
-                    .fillMaxWidth(0.35f)
-                    .height(40.dp)
+            missions.forEach { mission ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    OutlinedButton(
+                        onClick = { selectedMission = mission },
+                        modifier = Modifier
+                            .fillMaxWidth(0.7f)
+                            .height(50.dp),
+                        border = BorderStroke(
+                            2.dp,
+                            if (selectedMission == mission) Color(0xFFB58089) else Color(0xFFFCFAEE)
+                        ),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = if (selectedMission == mission) Color(0xFFB58089) else Color(0xFFFCFAEE)
+                        ),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text(
+                            text = mission,
+                            fontSize = 21.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            fontFamily = FontFamily.SansSerif
+                        )
+                    }
+                }
+                if (mission == "Math") {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            Color(0xFFFCFAEE),
+                        ),
+                        modifier = Modifier
+                            .size(width = 240.dp, height = 170.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Example:\n3 * 4 + 16 = __\n24 + 12 = __\n15 + 2 * 3 = __",
+                                color = Color(0xFF202426),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                fontFamily = FontFamily.SansSerif,
+                                lineHeight = 35.sp,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+            }
+            // ---------------------
+            Spacer(modifier = Modifier.height(50.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
             ) {
-                Text("done", color = Color(0xFF384B70), fontSize = 18.sp, fontFamily =  FontFamily.SansSerif)
+                ElevatedButton(onClick = { onDone(selectedMission) },
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFCFAEE)),
+                    modifier = Modifier
+                        .fillMaxWidth(0.35f)
+                        .height(40.dp)
+                ) {
+                    Text("done", color = Color(0xFF384B70), fontSize = 18.sp, fontFamily =  FontFamily.SansSerif)
+                }
             }
         }
 
-
     }
 }
+
+
 

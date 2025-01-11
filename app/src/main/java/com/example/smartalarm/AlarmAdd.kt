@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -32,14 +30,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun AddAlarmPage( onSave: (AlarmEntity) -> Unit, onCancel: () -> Unit) {
+fun AddAlarmPage(onSave: (AlarmEntity) -> Unit, onCancel: () -> Unit) {
 
     var time by remember { mutableStateOf("07:00") }
     var label by remember { mutableStateOf("Alarm") }
     var repeatDays by remember { mutableStateOf(emptyList<String>()) }
     var sound by remember { mutableIntStateOf(R.raw.radar) }
     var mission by remember { mutableStateOf("Math") }
-    var snooze by remember { mutableStateOf(true) }
 
     var mode by remember { mutableStateOf("main") }
     // "main", "editRepeatDays", "editTime", "editLabel", "editSound", "editMission"
@@ -70,8 +67,7 @@ fun AddAlarmPage( onSave: (AlarmEntity) -> Unit, onCancel: () -> Unit) {
                                 label = label,
                                 repeatDays = repeatDays,
                                 sound = sound,
-                                mission = mission,
-                                snooze = snooze
+                                mission = mission
                             )
                         )},
                         modifier = Modifier.weight(1f)
@@ -85,7 +81,7 @@ fun AddAlarmPage( onSave: (AlarmEntity) -> Unit, onCancel: () -> Unit) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(),
-                    contentAlignment = Alignment.Center // Center the button horizontally
+                    contentAlignment = Alignment.Center
                 ) {
                     ElevatedButton(
                         onClick = {mode = "editTime"},
@@ -93,18 +89,16 @@ fun AddAlarmPage( onSave: (AlarmEntity) -> Unit, onCancel: () -> Unit) {
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF596266)),
                         modifier = Modifier
-                            .fillMaxWidth(0.5f) // Make the button take 70% of the width (adjustable)
+                            .fillMaxWidth(0.5f)
                             .height(75.dp)
                     ) {
                         Text(text = time, fontSize = 45.sp, fontWeight = FontWeight.ExtraBold, fontFamily =  FontFamily.SansSerif)
                     }
                 }
-                AddLabelsSection(label = label,
+                LabelsSection(label = label,
                     repeatDays = repeatDays,
                     sound = sound,
                     mission = mission,
-                    snooze = snooze,
-                    onSnoozeChange = {snooze = !snooze},
                     onEditRepeatDays = { mode = "editRepeatDays" },
                     onEditLabel = { mode = "editLabel" },
                     onEditSound = { mode = "editSound" },
@@ -153,124 +147,6 @@ fun AddAlarmPage( onSave: (AlarmEntity) -> Unit, onCancel: () -> Unit) {
     }
 }
 
-@Composable
-fun AddLabelsSection(label: String,
-                  repeatDays: List<String>,
-                  sound: Int,
-                  mission: String,
-                  snooze: Boolean,
-                  onSnoozeChange: () -> Unit,
-                  onEditRepeatDays: () -> Unit,
-                  onEditLabel: () -> Unit,
-                  onEditSound: () -> Unit,
-                  onEditMission: () -> Unit
-) {
-    Column (modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp)
-    ) {
-        Spacer(modifier = Modifier.height(24.dp))
-        TextButton(
-            onClick = { onEditMission() },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(), // Make Row fill the TextButton
-                horizontalArrangement = Arrangement.SpaceBetween // Align texts at both ends
-            ) {
-                Text(text = "Mission", fontSize = 25.sp, textAlign = TextAlign.Start, color = Color(0xFFFCFAEE),
-                    fontFamily =  FontFamily.SansSerif, fontWeight = FontWeight.Bold)
-                Text(text = "$mission >", fontSize = 25.sp, textAlign = TextAlign.End, color = Color(0xFFFCFAEE),
-                    fontFamily =  FontFamily.SansSerif, fontWeight = FontWeight.Bold)
-            }
-        }
-        Spacer(modifier = Modifier.height(18.dp))
-        TextButton(
-            onClick = { onEditRepeatDays() },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(), // Make Row fill the TextButton
-                horizontalArrangement = Arrangement.SpaceBetween // Align texts at both ends
-            ) {
-                Text(text = "Repeat", fontSize = 25.sp, textAlign = TextAlign.Start, color = Color(0xFFFCFAEE),
-                    fontFamily =  FontFamily.SansSerif, fontWeight = FontWeight.Bold)
-                Text(text =  showDays(repeatDays) + " >", fontSize = 25.sp, textAlign = TextAlign.End, color = Color(0xFFFCFAEE),
-                    fontFamily =  FontFamily.SansSerif, fontWeight = FontWeight.Bold)
-            }
-        }
-        Spacer(modifier = Modifier.height(18.dp))
-        TextButton(
-            onClick = { onEditLabel() },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(), // Make Row fill the TextButton
-                horizontalArrangement = Arrangement.SpaceBetween // Align texts at both ends
-            ) {
-                Text(text = "Label", fontSize = 25.sp, textAlign = TextAlign.Start, color = Color(0xFFFCFAEE),
-                    fontFamily =  FontFamily.SansSerif, fontWeight = FontWeight.Bold)
-                Text(text = "$label >", fontSize = 25.sp, textAlign = TextAlign.End, color = Color(0xFFFCFAEE),
-                    fontFamily =  FontFamily.SansSerif, fontWeight = FontWeight.Bold)
-            }
-        }
-        Spacer(modifier = Modifier.height(18.dp))
-        TextButton(
-            onClick = { onEditSound() },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            val soundOptions = listOf(
-                Pair("Funny Rooster", R.raw.funny_rooster),
-                Pair("Igor Mikić", R.raw.igor),
-                Pair("Lofi", R.raw.lofi),
-                Pair("Morning Joy", R.raw.morning_joy),
-                Pair("Oversimplified", R.raw.oversimplified),
-                Pair("Radar", R.raw.radar)
-            )
-            val soundName = soundOptions.find { it.second == sound }?.first
-            Row(
-                modifier = Modifier.fillMaxWidth(), // Make Row fill the TextButton
-                horizontalArrangement = Arrangement.SpaceBetween // Align texts at both ends
-            ) {
-                Text(text = "Sound", fontSize = 25.sp, textAlign = TextAlign.Start, color = Color(0xFFFCFAEE),
-                    fontFamily =  FontFamily.SansSerif, fontWeight = FontWeight.Bold)
-                Text(text = "$soundName >", fontSize = 25.sp, textAlign = TextAlign.End, color = Color(0xFFFCFAEE),
-                    fontFamily =  FontFamily.SansSerif, fontWeight = FontWeight.Bold)
-            }
-        }
-        Spacer(modifier = Modifier.height(18.dp))
-        TextButton(
-            onClick = { },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(), // Make Row fill the TextButton
-                horizontalArrangement = Arrangement.SpaceBetween // Align texts at both ends
-            ) {
-                Text(
-                    text = "Snooze",
-                    fontSize = 25.sp,
-                    textAlign = TextAlign.Start,
-                    color = Color(0xFFFCFAEE),
-                    fontFamily =  FontFamily.SansSerif,
-                    fontWeight = FontWeight.Bold
-                )
-                Switch(
-                    checked = snooze,
-                    onCheckedChange = {
-                        onSnoozeChange()
-                    },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color(0xFFBA4054),
-                        uncheckedThumbColor = Color(0xFF2F393D),
-                        checkedTrackColor = Color(0xFFB58089),
-                        uncheckedTrackColor = Color(0xFF404F54)
-                    )
-                )
-            }
-        }
-    }
-}
 
 
 
