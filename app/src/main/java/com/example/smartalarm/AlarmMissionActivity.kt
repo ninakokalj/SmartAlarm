@@ -35,6 +35,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -124,14 +126,16 @@ fun MathMissionContent(
                     text = "Solve the equation:",
                     color = Color(0xFFFCFAEE),
                     fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.SansSerif
                 )
 
                 Text(
                     text = questionText,
                     color = Color(0xFFFCFAEE),
                     fontSize = 36.sp,
-                    fontWeight = FontWeight.ExtraBold
+                    fontWeight = FontWeight.ExtraBold,
+                    fontFamily = FontFamily.SansSerif
                 )
 
                 Row(
@@ -148,8 +152,14 @@ fun MathMissionContent(
                             unfocusedBorderColor = Color(0xFF546E7A),
                             cursorColor = Color(0xFFB58089)
                         ),
+                        textStyle = TextStyle(
+                            color = Color(0xFFFCFAEE),
+                            fontFamily = FontFamily.SansSerif,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 25.sp
+                        ),
                         onValueChange = onUserInputChange,
-                        label = { Text("Your answer", color = Color(0xFF202426)) },
+                        label = { Text("Your answer", color = Color(0xFFFCFAEE), fontSize = 15.sp, fontFamily = FontFamily.SansSerif) },
                         keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f)
                     )
@@ -171,7 +181,7 @@ fun MathMissionContent(
                         ),
                         modifier = Modifier.height(56.dp)
                     ) {
-                        Text("Check", fontSize = 20.sp)
+                        Text("Check", fontSize = 20.sp, fontFamily = FontFamily.SansSerif)
                     }
                 }
 
