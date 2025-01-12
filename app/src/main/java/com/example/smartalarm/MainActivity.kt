@@ -3,6 +3,7 @@ package com.example.smartalarm
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -39,6 +40,8 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
@@ -53,6 +56,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
+import androidx.lifecycle.viewmodel.compose.viewModel
 import java.util.Calendar
 
 @Entity(tableName = "alarms")
@@ -70,6 +74,8 @@ data class AlarmEntity(
 class MainActivity : ComponentActivity() {
 
     private lateinit var alarmViewModel: AlarmViewModel
+    private var startTime: Long = 0L // začetni čas v milisekundah
+    private var totalTimeSpent: Long = 0L // skupni čas preživet v aplikaciji
 
     @RequiresApi(Build.VERSION_CODES.S)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -107,6 +113,13 @@ class MainActivity : ComponentActivity() {
                         NavHost(navController = navController, startDestination = startDestination) {
                             // First screen: Alarm list
                             composable("alarmList") {
+                                val viewModel: WeatherViewModel = viewModel()
+                                val weather = viewModel.weatherData.collectAsState().value
+                                LaunchedEffect(Unit) {
+                                    viewModel.fetchWeather(latitude = 52.52, longitude = 13.41) // Berlin example
+                                }
+                                val temperature = weather?.temperature ?: 0.0
+                                val weathercode = weather?.weathercode ?: 0
                                 AlarmScreen(
                                     alarms = alarms,
                                     context = ctx,
@@ -119,7 +132,9 @@ class MainActivity : ComponentActivity() {
                                     },
                                     addAlarm = { navController.navigate("addAlarm") },
                                     scheduleAlarm = { context, alarm -> alarmViewModel.scheduleAlarm(context, alarm) },
-                                    unscheduleAlarm = { context, alarm -> alarmViewModel.unscheduleAlarm(context, alarm) }
+                                    unscheduleAlarm = { context, alarm -> alarmViewModel.unscheduleAlarm(context, alarm) },
+                                    temperature = temperature,
+                                    weathercode = weathercode
                                 )
                             }
                             // Second screen: Edit alarm screen
@@ -176,6 +191,41 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        Log.d("Lifecycle", "onCreate called")
+    }
+    // logiranje v metodah življenskega cikla
+    override fun onStart() {
+        super.onStart()
+        Log.d("Lifecycle", "onStart called")
+    }
+    override fun onResume() {
+        super.onResume()
+        Log.d("Lifecycle", "onResume called")
+
+        startTime = System.currentTimeMillis()
+    }
+    override fun onPause() {
+        super.onPause()
+        Log.d("Lifecycle", "onPause called")
+
+        val endTime = System.currentTimeMillis()
+        val timeSpent = endTime - startTime
+        totalTimeSpent += timeSpent
+
+        Log.d("Lifecycle", "Time spent in this session: ${timeSpent / 1000} seconds")
+        Log.d("Lifecycle", "Total time spent in app: ${totalTimeSpent / 1000} seconds")
+    }
+    override fun onStop() {
+        super.onStop()
+        Log.d("Lifecycle", "onStop called")
+    }
+    override fun onRestart() {
+        super.onRestart()
+        Log.d("Lifecycle", "onRestart called")
+    }
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d("Lifecycle", "onDestroy called")
     }
 }
 
@@ -185,7 +235,7 @@ class MainActivity : ComponentActivity() {
 fun AlarmScreen(alarms: List<AlarmEntity>, context: Context, modifier: Modifier, onAlarmChange: (AlarmEntity) -> Unit,
                 onAlarmClick: (AlarmEntity) -> Unit, addAlarm: () -> Unit,
                 scheduleAlarm: (Context, AlarmEntity) -> Unit,
-                unscheduleAlarm: (Context, AlarmEntity) -> Unit,) {
+                unscheduleAlarm: (Context, AlarmEntity) -> Unit, temperature: Double, weathercode: Int) {
 
     Scaffold (
         modifier = modifier,
@@ -228,8 +278,34 @@ fun AlarmScreen(alarms: List<AlarmEntity>, context: Context, modifier: Modifier,
                         )
                     }
 
+                    // weather info
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Weather: ${translateWeatherCode(weathercode)}",
+                                color = Color(0xFFFCFAEE),
+                                fontSize = 18.sp,
+                                fontFamily = FontFamily.SansSerif,
+                                fontWeight = FontWeight.Normal
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Temperature: ${"%.1f".format(temperature)}°C",
+                                color = Color(0xFFFCFAEE),
+                                fontSize = 18.sp,
+                                fontFamily = FontFamily.SansSerif,
+                                fontWeight = FontWeight.Normal
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
+
                 items(alarms) { alarm ->
                     AlarmButton(alarm = alarm, onAlarmChange = onAlarmChange,
                         onAlarmClick = onAlarmClick,
@@ -244,6 +320,21 @@ fun AlarmScreen(alarms: List<AlarmEntity>, context: Context, modifier: Modifier,
                 }
             }
         }
+    }
+}
+
+fun translateWeatherCode(weatherCode: Int): String {
+    return when (weatherCode) {
+        0 -> "Clear sky"
+        1, 2 -> "Mainly clear"
+        3 -> "Cloudy"
+        45, 48 -> "Foggy"
+        51, 53, 55 -> "Drizzle"
+        61, 63, 65 -> "Rain"
+        71, 73, 75 -> "Snowfall"
+        95 -> "Thunderstorm"
+        96, 99 -> "Thunderstorm with hail"
+        else -> "Unknown weather condition"
     }
 }
 

@@ -190,8 +190,6 @@ fun MathMissionContent(
     }
 }
 
-
-
 fun mathEquation(state: Int): Pair<String, Int> {
     return when (state) {
         0 -> {
